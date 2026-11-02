@@ -1,0 +1,193 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Expense Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Smart Expense Analyzer</h1>
+        <p style="text-align: center;">Track your daily expenses easily.</p>
+
+        <h2>Add a New Expense</h2>
+        <form action="{{ url_for('home') }}" method="POST">
+            <label for="expense_name">Expense Name:</label>
+            <input type="text" id="expense_name" name="expense_name"
+                   placeholder="Example: Lunch" required>
+
+            <label for="amount">Amount (₹):</label>
+            <input type="number" id="amount" name="amount"
+                   placeholder="Enter amount" min="0.01" step="0.01" required>
+
+            <label for="expense_date">Expense Date:</label>
+            <input type="date" id="expense_date" name="expense_date"
+                   value="{{ today }}" required>
+
+            <label for="category">Category:</label>
+            <select id="category" name="category" required>
+                <option value="">Select a category</option>
+                <option value="Food">Food</option>
+                <option value="Travel">Travel</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Bills">Bills</option>
+                <option value="Other">Other</option>
+            </select>
+
+            <button type="submit">Add Expense</button>
+        </form>
+
+        <h2>Monthly Spending Filter</h2>
+        <form action="{{ url_for('home') }}" method="GET">
+            <label for="month">Select Month:</label>
+            <select name="month" id="month">
+                <option value="all" {% if selected_month == "all" %}selected{% endif %}>
+                    All Months
+                </option>
+                {% for item in months %}
+                    <option value="{{ item.month }}"
+                        {% if selected_month == item.month %}selected{% endif %}>
+                        {{ item.month }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit">Filter Expenses</button>
+        </form>
+
+        <h2>Monthly Budget</h2>
+
+        {% if selected_month != "all" %}
+            <form action="{{ url_for('set_budget') }}" method="POST">
+                <input type="hidden" name="month" value="{{ selected_month }}">
+
+                <label for="budget">
+                    Set Budget for {{ selected_month }} (₹):
+                </label>
+                <input type="number" id="budget" name="budget"
+                       min="0.01" step="0.01"
+                       placeholder="Example: 5000"
+                       value="{{ monthly_budget if monthly_budget > 0 else '' }}"
+                       required>
+
+                <button type="submit">Save Monthly Budget</button>
+            </form>
+
+            {% if monthly_budget > 0 %}
+                <div class="expense-item">
+                    <p>Monthly Budget: ₹{{ "%.2f"|format(monthly_budget) }}</p>
+                    <p>Total Spent: ₹{{ "%.2f"|format(total_expenses) }}</p>
+
+                    {% if remaining_budget >= 0 %}
+                        <p style="color: green;">
+                            Remaining Budget: ₹{{ "%.2f"|format(remaining_budget) }}
+                        </p>
+                        <p>{{ budget_message }}</p>
+                    {% else %}
+                        <p style="color: red;">
+                            {{ budget_message }}
+                        </p>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p>No budget set for this month yet.</p>
+            {% endif %}
+        {% else %}
+            <p>Select a month above to set or view its budget.</p>
+        {% endif %}
+
+        <h2>Total Expenses</h2>
+        <div class="total">₹{{ "%.2f"|format(total_expenses) }}</div>
+
+        <h2>Monthly Spending Report</h2>
+        {% if monthly_totals %}
+            {% for item in monthly_totals %}
+                <div class="expense-item">
+                    <strong>{{ item.month }}</strong>
+                    — ₹{{ "%.2f"|format(item.total) }}
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No monthly spending data available yet.</p>
+        {% endif %}
+
+        <h2>Spending by Category</h2>
+        {% if category_totals %}
+            <ul>
+                {% for item in category_totals %}
+                    <li>{{ item.category }}: ₹{{ "%.2f"|format(item.total) }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No spending data available yet.</p>
+        {% endif %}
+
+        <h2>Spending Chart</h2>
+        {% if category_totals %}
+            <div style="max-width: 400px; margin: 20px auto;">
+                <canvas id="expenseChart"></canvas>
+            </div>
+        {% else %}
+            <p>Add an expense to see your chart.</p>
+        {% endif %}
+
+        <h2>Smart Spending Insight</h2>
+        <div class="total">{{ insight }}</div>
+
+        <h2>Your Expenses</h2>
+        {% if expenses %}
+            {% for expense in expenses %}
+                <div class="expense-item">
+                    <strong>{{ expense.name }}</strong>
+                    — ₹{{ "%.2f"|format(expense.amount) }}
+                    — {{ expense.category }}
+                    <p><small>Date: {{ expense.expense_date }}</small></p>
+
+                    <form action="{{ url_for('delete_expense', index=expense.id) }}"
+                          method="POST">
+                        <input type="hidden" name="month" value="{{ selected_month }}">
+                        <button type="submit">Delete</button>
+                    </form>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No expenses added yet.</p>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {% if category_totals %}
+    <script>
+        const categoryLabels = {{ category_totals | map(attribute='category') | list | tojson }};
+        const categoryAmounts = {{ category_totals | map(attribute='total') | list | tojson }};
+        const chartCanvas = document.getElementById("expenseChart");
+
+        if (chartCanvas && categoryLabels.length > 0) {
+            new Chart(chartCanvas, {
+                type: "pie",
+                data: {
+                    labels: categoryLabels,
+                    datasets: [{
+                        label: "Spending (₹)",
+                        data: categoryAmounts,
+                        backgroundColor: [
+                            "#4285F4", "#34A853", "#FBBC05",
+                            "#EA4335", "#A142F4"
+                        ],
+                        borderColor: "#ffffff",
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: "bottom" }
+                    }
+                }
+            });
+        }
+    </script>
+    {% endif %}
+</body>
+</html>
