@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .welcome-text {
+    font-size: 22px;
+    font-weight: bold;
+}
+        .owner-container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 25px;
+        }
+
+        .owner-card {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .user-table th, .user-table td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .-button {
+            background: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="owner-container">
+
+    <h1>Smart Expense Analyzer</h1>logout
+    <h2>Owner Dashboard</h2>
+
+    <p class="welcome-text">
+    Welcome, {{ current_user.username }}!
+    </p>
+
+    <form action="{{ url_for('logout') }}" method="POST">
+        <button class="logout-button" type="submit">Logout</button>
+    </form>
+    
+    <div class="owner-card">
+        <h3>Total Registered Users</h3>
+        <h2>{{ total_users }}</h2>
+    </div>
+
+    <div class="owner-card">
+        <h3>Total Expenses Added</h3>
+        <h2>{{ total_expenses }}</h2>
+    </div>
+
+    <div class="owner-card">
+        <h3>Registered Users</h3>
+
+        {% if users %}
+        <table class="user-table">
+            <tr>
+                <th>User ID</th>
+                <th>Username</th>
+            </tr>
+
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <p>No registered users yet.</p>
+        {% endif %}
+    </div>
+    <div class="owner-card">
+    <h3>All Users' Expenses</h3>
+
+    {% if user_expenses %}
+    <table class="user-table">
+        <tr>
+            <th>Username</th>
+            <th>Expense</th>
+            <th>Amount</th>
+            <th>Category</th>
+            <th>Date</th>
+        </tr>
+
+        {% for expense in user_expenses %}
+        <tr>
+            <td>{{ expense.username }}</td>
+            <td>{{ expense.name }}</td>
+            <td>₹{{ "%.2f"|format(expense.amount) }}</td>
+            <td>{{ expense.category }}</td>
+            <td>{{ expense.expense_date }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p>No user expenses available yet.</p>
+    {% endif %}
+</div>
+
+</div>
+
+</body>
+</html>

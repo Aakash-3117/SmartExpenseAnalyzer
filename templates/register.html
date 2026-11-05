@@ -1,0 +1,31 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register - Smart Expense Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Create Your Account</h1>
+
+        {% with messages = get_flashed_messages() %}
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="POST">
+            <label>Choose Username</label>
+            <input type="text" name="username" required>
+
+            <label>Choose Password (minimum 8 characters)</label>
+            <input type="password" name="password" minlength="8" required>
+
+            <button type="submit">Register</button>
+        </form>
+
+        <p>Already registered? <a href="{{ url_for('login') }}">Login</a></p>
+    </div>
+</body>
+</html>
