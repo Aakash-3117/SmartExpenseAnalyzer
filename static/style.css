@@ -39,6 +39,7 @@ select {
     box-sizing: border-box;
     border: 1px solid #ccd3df;
     border-radius: 6px;
+    background: white;
 }
 
 button {
